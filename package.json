@@ -1,0 +1,19 @@
+{
+  "name": "dumlog",
+  "version": "1.0.0",
+  "description": "A dumb lil' logger for people who dont overthink things",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest"
+  },
+  "author": "robinsr",
+  "license": "ISC",
+  "dependencies": {
+    "yaml": "^2.3.4"
+  },
+  "devDependencies": {
+    "@tsconfig/node16": "^16.1.1"
+  }
+}
