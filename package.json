@@ -1,11 +1,11 @@
 {
   "name": "dumlog",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A dumb lil' logger for people who dont overthink things",
   "main": "src/index.ts",
   "type": "module",
   "scripts": {
-    "build": "tsc",
+    "compile": "tsc",
     "test": "vitest"
   },
   "author": "robinsr",
