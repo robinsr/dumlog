@@ -1,4 +1,4 @@
-import type { LayoutType } from './types.ts';
+import type { LayoutType } from './types.js';
 
 export const ANSI: Record<string, string> = {
   reset: '\x1b[0m',

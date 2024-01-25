@@ -1,4 +1,4 @@
-import type { LogCallback } from './types.ts';
+import type { LogCallback } from './types.js';
 
 export function isString(msg: any): msg is string {
   return typeof msg === 'string';

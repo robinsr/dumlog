@@ -1,8 +1,8 @@
-import type { Levels, LogCallback, LogWriter, ILogger, Unit, PlainLevels } from './types.ts';
-import type { ColorName, ColorFnMap, ColorFn } from './color.ts';
-import { isString, isLogCallback } from './check.ts';
-import { levels, levelColors } from './types.ts';
-import { combine } from './color.ts';
+import type { Levels, LogCallback, LogWriter, ILogger, Unit, PlainLevels } from './types.js';
+import type { ColorName, ColorFnMap, ColorFn } from './color.js';
+import { isString, isLogCallback } from './check.js';
+import { levels, levelColors } from './types.js';
+import { combine } from './color.js';
 
 
 // TODO - do you want to take on this dependency? Will work in Deno/Bun/Browser?

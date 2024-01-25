@@ -1,4 +1,4 @@
-import type { ColorFnMap, ColorName, Combiner } from './color.ts';
+import type { ColorFnMap, ColorName, Combiner } from './color.js';
 
 export const levels = ['off', 'metric', 'fatal', 'error', 'warn', 'info', 'debug', 'trace'] as const;
 

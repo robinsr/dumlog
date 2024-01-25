@@ -1,4 +1,4 @@
-import type { LayoutType } from './types.ts';
+import type { LayoutType } from './types.js';
 export declare const ANSI: Record<string, string>;
 export type ColorName = keyof typeof ANSI;
 export type ColorFn = (msg: string) => string;

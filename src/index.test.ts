@@ -1,7 +1,7 @@
 import { vi, test, describe, beforeEach } from 'vitest';
-import configure from './index.ts';
-import { ANSI, type ColorName } from './color.ts';
-import { Levels, PlainLevels, ILogger } from './types.ts';
+import configure from './index';
+import { ANSI, type ColorName } from './color';
+import { Levels, PlainLevels, ILogger } from './types';
 
 
 const options = {

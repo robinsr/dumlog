@@ -1,10 +1,10 @@
 import YAML from 'yaml';
 import { readFileSync, existsSync } from 'node:fs';
-import type { ILogger, LayoutType, Levels, LogConfig, LogWriter, PlainLevels } from './types.ts';
-import { levelColors } from './types.ts';
-import Logger from './logger.ts';
-import colorFns, { combine } from './color.ts';
-import { isString } from './check.ts';
+import type { ILogger, LayoutType, Levels, LogConfig, LogWriter, PlainLevels } from './types.js';
+import { levelColors } from './types.js';
+import Logger from './logger.js';
+import colorFns, { combine } from './color.js';
+import { isString } from './check.js';
 
 const dLogPrefix = '[@dumlog]';
 

@@ -1,6 +1,6 @@
 /// <reference types="node" resolution-mode="require"/>
-import type { Levels, LogCallback, LogWriter, ILogger, Unit, PlainLevels } from './types.ts';
-import type { ColorName, ColorFnMap, ColorFn } from './color.ts';
+import type { Levels, LogCallback, LogWriter, ILogger, Unit, PlainLevels } from './types.js';
+import type { ColorName, ColorFnMap, ColorFn } from './color.js';
 type consoleFns = Console;
 type Customizer = [
     Levels,

@@ -1,7 +1,6 @@
-import type { ILogger, LogConfig, LogWriter, PlainLevels } from './types.ts';
+import type { ILogger, LogConfig, LogWriter, PlainLevels } from './types.js';
 declare const options: {
     layout: string;
-    defaultLevel: PlainLevels;
     fallbackLevel: PlainLevels;
     debug: boolean;
     out: LogWriter;

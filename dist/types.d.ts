@@ -1,5 +1,5 @@
 /// <reference types="node" resolution-mode="require"/>
-import type { ColorFnMap, ColorName, Combiner } from './color.ts';
+import type { ColorFnMap, ColorName, Combiner } from './color.js';
 export declare const levels: readonly ["off", "metric", "fatal", "error", "warn", "info", "debug", "trace"];
 export type Levels = typeof levels[number];
 export type PlainLevels = Exclude<Levels, 'metric'>;

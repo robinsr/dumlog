@@ -3,10 +3,9 @@
   "include": ["src/**/*.ts"],
   "exclude": ["src/*.test.*"],
   "compilerOptions": {
-    "allowImportingTsExtensions": true,
+    "allowImportingTsExtensions": false,
     "outDir": "dist",
-    // Generate d.ts files
-    "emitDeclarationOnly": true,
-    "declaration": true
+    "declaration": true,
+    "module": "nodenext"
   }
 }
