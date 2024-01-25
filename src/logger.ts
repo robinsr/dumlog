@@ -1,6 +1,9 @@
 import type { Levels, LogCallback, LogWriter, ILogger, Unit, PlainLevels } from './types.ts';
+import type { ColorName, ColorFnMap, ColorFn } from './color.ts';
+import { isString, isLogCallback } from './check.ts';
 import { levels, levelColors } from './types.ts';
-import { combine, type ColorName, type ColorFnMap, type ColorFn } from './color.ts';
+import { combine } from './color.ts';
+
 
 // TODO - do you want to take on this dependency? Will work in Deno/Bun/Browser?
 import { inspect } from 'util';
@@ -24,8 +27,6 @@ const inspectOpts = {
 const time = () => {
   return new Date().toTimeString().split(' ')[0];
 };
-
-const isString = (msg: any) => typeof msg === 'string';
 
 const debugMapper = (msg: any[]) => {
   return msg.map((m) => isString(m) ? m : inspect(m, inspectOpts));
@@ -97,7 +98,7 @@ export default class Logger implements ILogger {
 
   metric = (metric: string | object, value: number, unit?: Unit) => {
     const { check, writer, mark } = this;
-    const metricName = str(metric) ? metric : (
+    const metricName = isString(metric) ? metric : (
       Object.entries(metric).map(([k, v]) => `${k}=${v}`).join(',')
     );
     const metricLine = [metricName, value, unit].filter(Boolean).join('|');
@@ -128,14 +129,4 @@ export default class Logger implements ILogger {
   };
 
   combine = (...fns: ColorFn[]) => combine(...fns);
-}
-
-const str = (msg: any) => typeof msg === 'string';
-
-function isFunction(functionToCheck: any): functionToCheck is Function {
-  return typeof functionToCheck === 'function';
-}
-
-function isLogCallback(cb: any): cb is LogCallback {
-  return isFunction(cb);
 }

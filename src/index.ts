@@ -1,43 +1,39 @@
 import YAML from 'yaml';
-import { readFileSync, existsSync, watchFile } from 'node:fs';
-import type { ILogger, LayoutType, Levels, LogConfig, LogWriter } from './types.ts';
+import { readFileSync, existsSync } from 'node:fs';
+import type { ILogger, LayoutType, Levels, LogConfig, LogWriter, PlainLevels } from './types.ts';
 import { levelColors } from './types.ts';
 import Logger from './logger.ts';
 import colorFns, { combine } from './color.ts';
+import { isString } from './check.ts';
 
-const pref = '[@dumlog]';
+const dLogPrefix = '[@dumlog]';
 
 const options = {
   layout: 'color' as LayoutType,
-  defaultLevel: 'warn' as Levels,
-  fallbackLevel: 'off' as Levels,
+  fallbackLevel: 'off' as PlainLevels,
   debug: false,
   out: console as LogWriter,
 }
 
-type Options = Required<typeof options>;
-type OptionOverrides = Partial<typeof options>;
+type Options = Partial<typeof options>;
 type CreateLogger = (logStream: string) => ILogger;
 
 export default async function configure(
   configs: string | LogConfig[],
-  opts: OptionOverrides = options
+  opts: Options = options
 ): Promise<CreateLogger> {
-  const { layout, defaultLevel, fallbackLevel, debug, out } = { ...options, ...opts }
+  const { layout, fallbackLevel, debug, out } = { ...options, ...opts }
   
-  const { dLog, ...col } = debugLog(debug, out);
+  const dLog = debugLog(debug, out);
+  const { debug: dLogDebug, fmt } = dLog;
 
-  const parseConfFile = async (confPath: string) => {
-    const configs = await YAML.parse(readFileSync(confPath, 'utf8'));
-    dLog('log config file:', col.bm(confPath));
-    return configs['streams'] as LogConfig[];
-  }
+  const parseFSConfig = configparser(dLog);
 
   if (typeof configs === 'string') {
     if (!existsSync(configs)) {
-      throw new Error(`${pref} Log config file not found: ${configs}`);
+      throw new Error(`${dLogPrefix} Log config file not found: ${configs}`);
     }
-    configs = await parseConfFile(configs);
+    configs = await parseFSConfig(configs);
   }
 
   const fallback = {
@@ -49,7 +45,7 @@ export default async function configure(
     level,
   }));
 
-  dLog(col.bm('log config:'), logConfig);
+  dLogDebug(fmt.bm('log config:'), logConfig);
 
   const colors = colorFns(layout);
   const loggers: Record<string, ILogger> = {};
@@ -57,10 +53,17 @@ export default async function configure(
   return function createLogger(logStream: string): ILogger {
     if (!loggers[logStream]) {
       const match = logConfig.find((l) => l.pattern.test(logStream))!;
-      const level = match ? match.level : defaultLevel;
+      dLogDebug('match', match);
+      const level = match ? match.level : fallbackLevel;
       loggers[logStream] = new Logger(out, logStream, level, colors);
 
-      dLog(`Match => LogStream ${col.bm(col.qt(logStream))} to pattern ${col.bc(match.pattern)} (${col.ifc(level, level)})`);
+      dLogDebug([
+        'Match => LogStream',
+        fmt.bm(fmt.qt(logStream)),
+        'to pattern', 
+        fmt.bc(match.pattern),
+        fmt.ifc(level, level),
+      ]);
     }
 
     return loggers[logStream];
@@ -72,7 +75,7 @@ export default async function configure(
  */
 async function configureAndWatch(
   configs: string | LogConfig[],
-  opts: OptionOverrides = options
+  opts: Options = options
 ): Promise<CreateLogger> {
   const createLogger = await configure(configs, opts);
 
@@ -87,21 +90,57 @@ async function configureAndWatch(
 }
 
 
+
+type DebugLogger = ReturnType<typeof debugLog>;
+
 const debugLog = (enabled: boolean, out: LogWriter) => {
-  const dumlog = new Logger(
+  const dLog = new Logger(
     out, '@dumlog', enabled ? 'debug' : 'off', colorFns('color')
   );
 
-  const bm = combine(dumlog.color.bold, dumlog.color.magenta);
-  const bc = combine(dumlog.color.bold, dumlog.color.cyan);
+  const bm = combine(dLog.color.bold, dLog.color.magenta);
+  const bc = combine(dLog.color.bold, dLog.color.cyan);
+  const gg = combine(dLog.color.grey, dLog.color.grey);
   
   const qt = (msg: string) => `"${msg}"`;
   
   const ifc = (lev: Levels, msg: string) => {
-    levelColors[lev] ? dumlog.color[levelColors[lev]](msg) : msg;
+    return levelColors[lev] ? dLog.color[levelColors[lev]](msg) : msg;
   }
 
-  const dLog = dumlog.custom([ 'debug', 'grey', 'debug' ]);
+  const fmt = { bm, bc, qt, gg, ifc }
 
-  return { dLog, bm, bc, qt, ifc };
+  const grayLevel = dLog.custom([ 'debug', 'grey', 'debug' ]);
+
+  const debug = (msg: any, ...msgs: any[]) => {
+    if (Array.isArray(msg)) {
+      grayLevel(msg.map((m) => isString(m) && !m.startsWith('\x1B') ? fmt.gg(m) : m).join(' '))
+    } else {
+      grayLevel(msg, ...msgs);
+    }
+  }
+
+  return { dLog, debug, fmt };
+}
+
+const configparser = ({ debug, fmt }: DebugLogger) => async (confPath: string) => {
+  debug('Parsing config file:', fmt.bm(confPath));
+  
+  try {
+    const configs = await YAML.parse(readFileSync(confPath, 'utf8'));
+
+    if (!configs['streams']) {
+      throw new Error(`${dLogPrefix} Log config file missing "streams" property: ${confPath}`);
+    }
+
+    configs.streams.forEach((stream: any) => {
+      if (!stream['pattern'] || !stream['level']) {
+        throw new Error(`${dLogPrefix} Log config file missing required "pattern" or "level" property: ${confPath}`);
+      }
+    });
+
+    return configs['streams'] as LogConfig[];
+  } catch (e) {
+    throw new Error(`${dLogPrefix} Log config file failed to parse: ${confPath}`);
+  }
 }

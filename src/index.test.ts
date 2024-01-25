@@ -7,7 +7,7 @@ import { Levels, PlainLevels, ILogger } from './types.ts';
 const options = {
   layout: 'color' as const,
   defaultLevel: 'off' as const,
-  debug: false,
+  debug: true,
 }
 
 const createTestLogger = await configure([

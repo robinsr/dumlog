@@ -1,17 +1,18 @@
 /// <reference types="node" resolution-mode="require"/>
-import type { LEVELS, LogCallback, ILogger, Unit } from './types.ts';
-import { type ColorName, type ColorFnMap, type ColorFn } from './color.ts';
+import type { Levels, LogCallback, LogWriter, ILogger, Unit, PlainLevels } from './types.ts';
+import type { ColorName, ColorFnMap, ColorFn } from './color.ts';
 type consoleFns = Console;
 type Customizer = [
-    LEVELS,
+    Levels,
     ColorName,
     keyof consoleFns
 ];
 export default class Logger implements ILogger {
+    private writer;
     logstream: string;
-    level: LEVELS;
+    level: Levels;
     color: ColorFnMap;
-    constructor(logstream: string, level: LEVELS, color: ColorFnMap);
+    constructor(writer: LogWriter, logstream: string, level: Levels, color: ColorFnMap);
     private mark;
     private check;
     off: (...msg: any[]) => void;
@@ -22,7 +23,13 @@ export default class Logger implements ILogger {
     debug: (...msg: any[]) => void;
     trace: (...msg: any[]) => void;
     metric: (metric: string | object, value: number, unit?: Unit) => void;
-    ifEnabled: (level: LEVELS, cb: LogCallback) => false | void;
+    ifEnabled(level: PlainLevels, cb: LogCallback): void;
+    /**
+     * Create one-off custom loggers by passing in a customizer customizer is an
+     * array of [ level, ansi, console function ]
+     *
+     * e.g. ['debug', 'grey', 'debug']
+     */
     custom: (custom: Customizer) => (...msg: any[]) => void;
     combine: (...fns: ColorFn[]) => (msg: any) => string;
 }

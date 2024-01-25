@@ -1,11 +1,12 @@
-import type { ILogger, LogConfig } from './types.ts';
+import type { ILogger, LogConfig, LogWriter, PlainLevels } from './types.ts';
 declare const options: {
     layout: string;
-    defaultLevel: "off" | "metric" | "fatal" | "error" | "warn" | "info" | "debug" | "trace";
-    fallbackLevel: "off" | "metric" | "fatal" | "error" | "warn" | "info" | "debug" | "trace";
+    defaultLevel: PlainLevels;
+    fallbackLevel: PlainLevels;
     debug: boolean;
+    out: LogWriter;
 };
-type OptionOverrides = Partial<typeof options>;
+type Options = Partial<typeof options>;
 type CreateLogger = (logStream: string) => ILogger;
-export default function configure(configs: string | LogConfig[], opts?: OptionOverrides): Promise<CreateLogger>;
+export default function configure(configs: string | LogConfig[], opts?: Options): Promise<CreateLogger>;
 export {};
