@@ -1,4 +1,5 @@
-import { levels, type LEVELS, type ILogger } from './types.ts';
+import type { Levels, LogCallback, LogWriter, ILogger, Unit, PlainLevels } from './types.ts';
+import { levels, levelColors } from './types.ts';
 import { combine, type ColorName, type ColorFnMap, type ColorFn } from './color.ts';
 
 // TODO - do you want to take on this dependency? Will work in Deno/Bun/Browser?
@@ -8,7 +9,7 @@ type consoleFns = Console;
 
 type Customizer = [
   // level of the customizer
-  LEVELS,
+  Levels,
   // ansi color of the customizer
   ColorName,
   // console function to use
@@ -26,52 +27,94 @@ const time = () => {
 
 const isString = (msg: any) => typeof msg === 'string';
 
-const debugMapper = (msg: any[]) => msg.map((m) => isString(m) ? m : inspect(m, inspectOpts));
+const debugMapper = (msg: any[]) => {
+  return msg.map((m) => isString(m) ? m : inspect(m, inspectOpts));
+}
+
+const logCallbackMapper = (msg: any[]) => {
+  if (msg.length === 1 && isLogCallback(msg[0])) {
+    return [msg[0]()];
+  } else {
+    return msg;
+  }
+}
 
 export default class Logger implements ILogger {
+  private writer: LogWriter;
   logstream: string;
-  level: LEVELS;
+  level: Levels;
   color: ColorFnMap;
 
-  constructor(logstream: string, level: LEVELS, color: ColorFnMap) {
+  constructor(writer: LogWriter, logstream: string, level: Levels, color: ColorFnMap) {
+    this.writer = writer;
     this.logstream = logstream;
-    this.level = level || 'warn';
-    this.color = color
+    this.level = level;
+    this.color = color;
   }
 
-  private mark = (level: string, ansi: ColorName) => {
+  private mark = (level: Levels, ansi?: ColorName) => {
     const { color, logstream } = this;
-    return color.grey(time()) + ' ' + color[ansi](`[${level}] ${logstream}`) + ' -';
+    const levelMarker = color[ansi || levelColors[level]](`[${level}]`);
+    const timestamp = color.grey(time());
+    return `${timestamp} ${levelMarker} (${logstream}) -`;
   };
 
-  private check = (level: LEVELS) => {
+  private check = (level: Levels) => {
     return levels.indexOf(this.level) >= levels.indexOf(level);
   };
 
+  off = (...msg: any[]) => {};
+
   fatal = (...msg: any[]) => {
-    this.check('fatal') && console.error(this.mark('FATAL', 'red'), ...msg);
+    const { check, writer, mark } = this;
+    check('fatal') && writer.error(mark('fatal'), ...logCallbackMapper(msg));
   };
+
   error = (...msg: any[]) => {
-    this.check('error') && console.error(this.mark('ERROR', 'red'), ...msg);
+    const { check, writer, mark } = this;
+    check('error') && writer.error(mark('error'), ...logCallbackMapper(msg));
   };
+
   warn = (...msg: any[]) => {
-    this.check('warn') && console.warn(this.mark('WARN', 'yellow'), ...msg);
+    const { check, writer, mark } = this;
+    check('warn') && writer.warn(mark('warn'), ...logCallbackMapper(msg));
   };
+
   info = (...msg: any[]) => {
-    this.check('info') && console.info(this.mark('INFO', 'blue'), ...msg);
+    const { check, writer, mark } = this;
+    check('info') && writer.info(mark('info'), ...logCallbackMapper(logCallbackMapper(msg)));
   };
+
   debug = (...msg: any[]) => {
-    this.check('debug') && console.debug(this.mark('DEBUG', 'cyan'), ...debugMapper(msg));
+    const { check, writer, mark } = this;
+    check('debug') && writer.debug(mark('debug'), ...debugMapper(msg));
   };
+
   trace = (...msg: any[]) => {
-    this.check('trace') && console.trace(this.mark('TRACE', 'white'), ...msg);
+    const { check, writer, mark } = this;
+    check('trace') && writer.trace(mark('trace'), ...logCallbackMapper(msg));
   };
 
-  isEnable = (level: LEVELS) => this.check(level) ? Promise.resolve() : Promise.reject();
+  metric = (metric: string | object, value: number, unit?: Unit) => {
+    const { check, writer, mark } = this;
+    const metricName = str(metric) ? metric : (
+      Object.entries(metric).map(([k, v]) => `${k}=${v}`).join(',')
+    );
+    const metricLine = [metricName, value, unit].filter(Boolean).join('|');
 
-  // Create one-off custom loggers by passing in a customizer
-  // customizer is an array of [ level, ansi, console function ]
-  // e.g. ['debug', 'grey', 'debug']
+    writer.info(mark('metric'), metricLine);
+  }
+
+  ifEnabled(level: PlainLevels, cb: LogCallback){
+    this.check(level) && this[level](cb());
+  }
+
+  /**
+   * Create one-off custom loggers by passing in a customizer customizer is an
+   * array of [ level, ansi, console function ] 
+   * 
+   * e.g. ['debug', 'grey', 'debug']
+   */
   custom = (custom: Customizer) => {
     const [level, ansi, fn] = custom;
 
@@ -85,4 +128,14 @@ export default class Logger implements ILogger {
   };
 
   combine = (...fns: ColorFn[]) => combine(...fns);
+}
+
+const str = (msg: any) => typeof msg === 'string';
+
+function isFunction(functionToCheck: any): functionToCheck is Function {
+  return typeof functionToCheck === 'function';
+}
+
+function isLogCallback(cb: any): cb is LogCallback {
+  return isFunction(cb);
 }

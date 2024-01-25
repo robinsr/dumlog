@@ -1,7 +1,12 @@
 {
   "extends": "@tsconfig/node16/tsconfig.json",
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/*.test.*"],
   "compilerOptions": {
     "allowImportingTsExtensions": true,
     "outDir": "dist",
+    // Generate d.ts files
+    "emitDeclarationOnly": true,
+    "declaration": true
   }
 }

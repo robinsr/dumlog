@@ -21,6 +21,7 @@ export const ANSI: Record<string, string> = {
   inverse: '\x1b[7m',
   hidden: '\x1b[8m',
   strike: '\x1b[9m',
+  bgRed: '\x1b[41m\x1b[30m',
 };
 
 export type ColorName = keyof typeof ANSI;

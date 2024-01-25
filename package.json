@@ -2,7 +2,7 @@
   "name": "dumlog",
   "version": "1.0.0",
   "description": "A dumb lil' logger for people who dont overthink things",
-  "main": "dist/index.js",
+  "main": "src/index.ts",
   "type": "module",
   "scripts": {
     "build": "tsc",
@@ -14,6 +14,8 @@
     "yaml": "^2.3.4"
   },
   "devDependencies": {
-    "@tsconfig/node16": "^16.1.1"
+    "@tsconfig/node16": "^16.1.1",
+    "@types/node": "^20.11.5",
+    "vitest": "^1.2.1"
   }
 }
