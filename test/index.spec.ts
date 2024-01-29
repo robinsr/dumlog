@@ -1,7 +1,10 @@
 import { vi, test, describe, beforeEach } from 'vitest';
-import configure from './index';
-import { ANSI, type ColorName } from './color';
-import { Levels, PlainLevels, ILogger } from './types';
+import { resolve } from 'node:path';
+import { configure, configureSync } from '../src/index';
+import { ANSI, type ColorName } from '../src/color';
+import { Levels, PlainLevels, ILogger } from '../src/types';
+
+const __dirname = new URL('./', import.meta.url).pathname
 
 
 const options = {
@@ -10,7 +13,7 @@ const options = {
   debug: true,
 }
 
-const createTestLogger = await configure([
+const createTestLogger = configureSync([
   { pattern: 'test-default', level: 'trace' as const },
 ], options);
 
@@ -38,7 +41,7 @@ describe('Levels Tests', () => {
       { pattern: logstream, level: 'trace' as const },
     ];
 
-    const createLogger = await configure(logConfig, { ...options, out: console });
+    const createLogger = await configureSync(logConfig, { ...options, out: console });
     ctx.logger = createLogger(logstream);
     ctx.console = console;
   })
@@ -109,39 +112,56 @@ describe('Levels Tests', () => {
 });
 
 
-  // describe.each([
-  //   'error',
-  //   'warn',
-  //   'info',
-  //   'trace'
-  // ] as const)('Level test', (level: PlainLevels) => {
+describe('Config file test', () => {
+  test('should require absolute path', async ({ expect }) => {
+    try {
+      await configure('./logconfig.yaml');
+      return Promise.reject();
+    } catch (e) {
+      expect(e).toHaveProperty('message', expect.stringContaining('Log config file path must be absolute'));
+    }
+  });
 
-  //   const fooString = 'fooString';
-  //   const barArray = [ 'barArray' ];
-  //   const bazObject = { baz: 'bazObject' };
-    
-  //   test<LocalTestContext>(`[${level}] pass through to writer`, ({ expect, logger, console }) => {
-  //     logger[level](fooString, barArray, bazObject);
+  test('should throw error if config file is not found', async ({ expect }) => {
+    const badPath = resolve(__dirname, './this-config-definitely-doesnt-exist.yaml');
+    try {
+      await configure(badPath);
+      return Promise.reject();
+    } catch (e) {
+      expect(e).toHaveProperty('message', expect.stringContaining('Log config file not found'));
+    }
+  });
 
-  //     expect(console[level])
-  //       .toHaveBeenCalledTimes(1);
 
-  //     expect(console[level])
-  //       .toHaveBeenCalledWith(expect.any(String), fooString, barArray, bazObject);
-  //   });
+  test('should load config file', async ({ expect }) => {
+    const goodPath = resolve(__dirname, './logconfig.yaml');
+    const console = getMockConsole();
 
-  //   test<LocalTestContext>(`[${level}] calls log statement supplier`, ({ expect, logger, console }) => {
-  //     const logStatement = `(${level}) to be logged`;
-  //     logger[level](() => logStatement);
+    try {
+      const createLogger = await configure(goodPath, { ...options, out: console });
+      const logInfo = createLogger('info-level');
+      const logOff = createLogger('off-level');
+      const logUnknown = createLogger('does-not-exist');
 
-  //     expect(console[level])
-  //       .toHaveBeenCalledTimes(1);
+      logInfo.info('this should be logged');
+      logOff.info('this should NOT be logged');
+      logUnknown.info('this should NOT be logged');
+      logUnknown.error('this should be logged');
 
-  //     expect(console[level])
-  //       .toHaveBeenCalledWith(expect.any(String), logStatement);
-  //   });
-  // });
+      expect(console.info)
+      .toHaveBeenCalledTimes(1);
 
+      expect(console.info).toHaveBeenCalledWith(expect.stringContaining('info-level'), 'this should be logged');
+
+      expect(console.error)
+      .toHaveBeenCalledTimes(1);
+
+      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('does-not-exist'), 'this should be logged');
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  })
+})
   
 
 describe('Extra capabilities', () => {

@@ -1,5 +1,6 @@
 import YAML from 'yaml';
 import { readFileSync, existsSync } from 'node:fs';
+import { isAbsolute } from 'node:path';
 import type { ILogger, LayoutType, Levels, LogConfig, LogWriter, PlainLevels } from './types.js';
 import { levelColors } from './types.js';
 import Logger from './logger.js';
@@ -18,23 +19,36 @@ const options = {
 type Options = Partial<typeof options>;
 type CreateLogger = (logStream: string) => ILogger;
 
-export default async function configure(
-  configs: string | LogConfig[],
-  opts: Options = options
-): Promise<CreateLogger> {
+export async function configure(configPath: string, opts: Options = options): Promise<CreateLogger> {
+  const { debug, out } = { ...options, ...opts }
+  const dLog = debugLog(debug, out);
+  const { debug: dLogDebug } = dLog;
+
+  dLogDebug('configPath', configPath);
+
+  if (!isAbsolute(configPath)) {
+    throw new Error(`${dLogPrefix} Log config file path must be absolute: ${configPath}`);
+  }
+
+  if (!existsSync(configPath)) {
+    throw new Error(`${dLogPrefix} Log config file not found: ${configPath}`);
+  }
+
+  try {
+    const config = await configparser(dLog)(configPath);
+    return configureSync(config, opts);
+  } catch (e) {
+    throw new Error(`${dLogPrefix} Log config file failed to parse: ${configPath}`);
+  }
+}
+
+export default configure;
+
+export function configureSync(configs: LogConfig[], opts: Options = options): CreateLogger {
   const { layout, fallbackLevel, debug, out } = { ...options, ...opts }
   
   const dLog = debugLog(debug, out);
   const { debug: dLogDebug, fmt } = dLog;
-
-  const parseFSConfig = configparser(dLog);
-
-  if (typeof configs === 'string') {
-    if (!existsSync(configs)) {
-      throw new Error(`${dLogPrefix} Log config file not found: ${configs}`);
-    }
-    configs = await parseFSConfig(configs);
-  }
 
   const fallback = {
     pattern: '.*', level: fallbackLevel
@@ -73,21 +87,21 @@ export default async function configure(
 /**
  * Work in progress
  */
-async function configureAndWatch(
-  configs: string | LogConfig[],
-  opts: Options = options
-): Promise<CreateLogger> {
-  const createLogger = await configure(configs, opts);
+// async function configureAndWatch(
+//   configs: string | LogConfig[],
+//   opts: Options = options
+// ): Promise<CreateLogger> {
+//   const createLogger = configure(configs, opts);
 
-  // if (typeof configs === 'string') {
-  //   watchFile(configs, async () => {
-  //     const newConfigs = await parseConfFile(configs);
-  //     createLogger(newConfigs);
-  //   });
-  // }
+//   if (typeof configs === 'string') {
+//     watchFile(configs, async () => {
+//       const newConfigs = await parseConfFile(configs);
+//       createLogger(newConfigs);
+//     });
+//   }
 
-  return createLogger;
-}
+//   return createLogger;
+// }
 
 
 
@@ -123,11 +137,11 @@ const debugLog = (enabled: boolean, out: LogWriter) => {
   return { dLog, debug, fmt };
 }
 
-const configparser = ({ debug, fmt }: DebugLogger) => async (confPath: string) => {
+const configparser = ({ debug, fmt }: DebugLogger) => (confPath: string) => {
   debug('Parsing config file:', fmt.bm(confPath));
   
   try {
-    const configs = await YAML.parse(readFileSync(confPath, 'utf8'));
+    const configs = YAML.parse(readFileSync(confPath, 'utf8'));
 
     if (!configs['streams']) {
       throw new Error(`${dLogPrefix} Log config file missing "streams" property: ${confPath}`);

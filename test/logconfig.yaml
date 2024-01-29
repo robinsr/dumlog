@@ -1,0 +1,6 @@
+warn: &LOG_LEVEL warn
+
+streams:
+  - { pattern: info-level, level: info }
+  - { pattern: off-level, level: off }
+  - { pattern: .*, level: *LOG_LEVEL }  

@@ -1,7 +1,43 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
 // src/index.ts
-import YAML from "yaml";
-import { readFileSync, existsSync } from "node:fs";
-import { isAbsolute } from "node:path";
+var src_exports = {};
+__export(src_exports, {
+  configure: () => configure,
+  configureSync: () => configureSync,
+  default: () => src_default
+});
+module.exports = __toCommonJS(src_exports);
+var import_yaml = __toESM(require("yaml"), 1);
+var import_node_fs = require("fs");
+var import_node_path = require("path");
 
 // src/types.ts
 var levels = ["off", "metric", "fatal", "error", "warn", "info", "debug", "trace"];
@@ -64,7 +100,7 @@ var combine = (...fns) => (msg) => fns.reduce((acc, fn) => fn(acc), msg);
 var color_default = colorFns;
 
 // src/logger.ts
-import { inspect } from "util";
+var import_util = require("util");
 var inspectOpts = {
   colors: true,
   depth: 6
@@ -73,7 +109,7 @@ var time = () => {
   return (/* @__PURE__ */ new Date()).toTimeString().split(" ")[0];
 };
 var debugMapper = (msg) => {
-  return msg.map((m) => isString(m) ? m : inspect(m, inspectOpts));
+  return msg.map((m) => isString(m) ? m : (0, import_util.inspect)(m, inspectOpts));
 };
 var logCallbackMapper = (msg) => {
   if (msg.length === 1 && isLogCallback(msg[0])) {
@@ -164,10 +200,10 @@ async function configure(configPath, opts = options) {
   const dLog = debugLog(debug, out);
   const { debug: dLogDebug } = dLog;
   dLogDebug("configPath", configPath);
-  if (!isAbsolute(configPath)) {
+  if (!(0, import_node_path.isAbsolute)(configPath)) {
     throw new Error(`${dLogPrefix} Log config file path must be absolute: ${configPath}`);
   }
-  if (!existsSync(configPath)) {
+  if (!(0, import_node_fs.existsSync)(configPath)) {
     throw new Error(`${dLogPrefix} Log config file not found: ${configPath}`);
   }
   try {
@@ -238,7 +274,7 @@ var debugLog = (enabled, out) => {
 var configparser = ({ debug, fmt }) => (confPath) => {
   debug("Parsing config file:", fmt.bm(confPath));
   try {
-    const configs = YAML.parse(readFileSync(confPath, "utf8"));
+    const configs = import_yaml.default.parse((0, import_node_fs.readFileSync)(confPath, "utf8"));
     if (!configs["streams"]) {
       throw new Error(`${dLogPrefix} Log config file missing "streams" property: ${confPath}`);
     }
@@ -252,8 +288,8 @@ var configparser = ({ debug, fmt }) => (confPath) => {
     throw new Error(`${dLogPrefix} Log config file failed to parse: ${confPath}`);
   }
 };
-export {
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
   configure,
-  configureSync,
-  src_default as default
-};
+  configureSync
+});
